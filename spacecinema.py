@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 import requests
+import cloudscraper
 
 
 # --------------------------------------------------
@@ -86,7 +87,7 @@ def _parse_session_time(session: dict) -> str:
 # --------------------------------------------------
 
 def fetch_lista(
-    session:     requests.Session,
+    session:     requests.Session | cloudscraper.CloudScraper,
     cinema_key:  str,
     giorni:      int | None = None,
     on_progress: Callable[[str, int, int], None] | None = None,
@@ -268,7 +269,7 @@ def main() -> None:
     def on_progress(msg, current, total):
         print(f"  [{current}/{total}] {msg}")
 
-    session   = requests.Session()
+    session   = cloudscraper.create_scraper()
     risultati = fetch_lista(session, args.cinema, giorni=args.giorni, on_progress=on_progress)
 
     if args.vista == "giorno":

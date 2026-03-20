@@ -21,6 +21,7 @@ import queue
 import asyncio
 import threading
 import requests as req_lib
+import cloudscraper
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -186,8 +187,9 @@ async def stream(
                         raw += notorious_mod.fetch_lista(session, c, giorni=giorni,
                                                          on_progress=_wrap_progress(NOTORIOUS_CINEMAS[c], on_progress))
                     q.put({"type": "log", "msg": "Ricerca rete The Space Cinema..."})
+                    space_session = cloudscraper.create_scraper()
                     for c in SPACE_CINEMAS:
-                        raw += space_mod.fetch_lista(session, c, giorni=giorni,
+                        raw += space_mod.fetch_lista(space_session, c, giorni=giorni,
                                                      on_progress=_wrap_progress(SPACE_CINEMAS[c], on_progress))
 
                 elif sala == ANTEO_NETWORK_ALL:
@@ -225,14 +227,15 @@ async def stream(
 
                 elif sala == SPACE_NETWORK_ALL:
                     q.put({"type": "log", "msg": "Avvio ricerca rete The Space Cinema..."})
+                    space_session = cloudscraper.create_scraper()
                     raw = []
                     for c in SPACE_CINEMAS:
-                        raw += space_mod.fetch_lista(session, c, giorni=giorni,
+                        raw += space_mod.fetch_lista(space_session, c, giorni=giorni,
                                                      on_progress=_wrap_progress(SPACE_CINEMAS[c], on_progress))
 
                 elif sala in SPACE_CINEMAS:
                     q.put({"type": "log", "msg": f"Avvio ricerca {SPACE_CINEMAS[sala]}..."})
-                    raw = space_mod.fetch_lista(session, sala, giorni=giorni, on_progress=on_progress)
+                    raw = space_mod.fetch_lista(cloudscraper.create_scraper(), sala, giorni=giorni, on_progress=on_progress)
 
                 else:
                     # Cineteca Milano: serve il nonce WordPress
