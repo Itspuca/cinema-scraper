@@ -21,7 +21,6 @@ import queue
 import asyncio
 import threading
 import requests as req_lib
-import cloudscraper
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -31,19 +30,16 @@ from cineteca_milano import get_nonce, fetch_lista, LUOGHI
 import anteo      as anteo_mod
 import uci        as uci_mod
 import notorious  as notorious_mod
-import spacecinema as space_mod
 
 # Chiavi per le reti complete
 GLOBAL_ALL        = "tutti-cinema"
 ANTEO_NETWORK_ALL = "tutti-anteo"
 UCI_NETWORK_ALL   = "tutti-uci"
 NOTORIOUS_NETWORK = "tutti-notorious"
-SPACE_NETWORK_ALL = "tutti-space"
 
 # Mappe cinema → nome visualizzato
 UCI_THEATRES      = {"uci-bicocca": "UCI Bicocca", "uci-lissone": "UCI Lissone"}
 NOTORIOUS_CINEMAS = {"notorious-sesto": "Notorious S.G. Sarca"}
-SPACE_CINEMAS     = {k: v["name"] for k, v in space_mod.CINEMAS.items()}
 
 app = FastAPI(title="Cinema Scraper API")
 
@@ -117,7 +113,6 @@ def sale():
         "anteo":     [ANTEO_NETWORK_ALL] + list(anteo_mod.CINEMAS.keys()),
         "uci":       [UCI_NETWORK_ALL]   + list(UCI_THEATRES.keys()),
         "notorious": [NOTORIOUS_NETWORK] + list(NOTORIOUS_CINEMAS.keys()),
-        "space":     [SPACE_NETWORK_ALL] + list(SPACE_CINEMAS.keys()),
         "all":       [GLOBAL_ALL],
     }
 
@@ -136,17 +131,14 @@ async def stream(
       - "tutti-anteo" / "Anteo" / "CityLife" / "Ariosto" / "Capitol"
       - "tutti-uci" / "uci-bicocca" / "uci-lissone"
       - "tutti-notorious" / "notorious-sesto"
-      - "tutti-space" / "space-rozzano"
       - "tutti-cinema"  (tutti i cinema)
     """
     valid_sala = (
-        {"tutte", GLOBAL_ALL, ANTEO_NETWORK_ALL, UCI_NETWORK_ALL,
-         NOTORIOUS_NETWORK, SPACE_NETWORK_ALL}
+        {"tutte", GLOBAL_ALL, ANTEO_NETWORK_ALL, UCI_NETWORK_ALL, NOTORIOUS_NETWORK}
         | set(LUOGHI.keys())
         | set(anteo_mod.CINEMAS.keys())
         | set(UCI_THEATRES.keys())
         | set(NOTORIOUS_CINEMAS.keys())
-        | set(SPACE_CINEMAS.keys())
     )
 
     if sala not in valid_sala:
@@ -186,11 +178,6 @@ async def stream(
                     for c in NOTORIOUS_CINEMAS:
                         raw += notorious_mod.fetch_lista(session, c, giorni=giorni,
                                                          on_progress=_wrap_progress(NOTORIOUS_CINEMAS[c], on_progress))
-                    q.put({"type": "log", "msg": "Ricerca rete The Space Cinema..."})
-                    space_session = cloudscraper.create_scraper()
-                    for c in SPACE_CINEMAS:
-                        raw += space_mod.fetch_lista(space_session, c, giorni=giorni,
-                                                     on_progress=_wrap_progress(SPACE_CINEMAS[c], on_progress))
 
                 elif sala == ANTEO_NETWORK_ALL:
                     q.put({"type": "log", "msg": "Avvio ricerca rete Anteo..."})
@@ -224,18 +211,6 @@ async def stream(
                 elif sala in NOTORIOUS_CINEMAS:
                     q.put({"type": "log", "msg": f"Avvio ricerca {NOTORIOUS_CINEMAS[sala]}..."})
                     raw = notorious_mod.fetch_lista(session, sala, giorni=giorni, on_progress=on_progress)
-
-                elif sala == SPACE_NETWORK_ALL:
-                    q.put({"type": "log", "msg": "Avvio ricerca rete The Space Cinema..."})
-                    space_session = cloudscraper.create_scraper()
-                    raw = []
-                    for c in SPACE_CINEMAS:
-                        raw += space_mod.fetch_lista(space_session, c, giorni=giorni,
-                                                     on_progress=_wrap_progress(SPACE_CINEMAS[c], on_progress))
-
-                elif sala in SPACE_CINEMAS:
-                    q.put({"type": "log", "msg": f"Avvio ricerca {SPACE_CINEMAS[sala]}..."})
-                    raw = space_mod.fetch_lista(cloudscraper.create_scraper(), sala, giorni=giorni, on_progress=on_progress)
 
                 else:
                     # Cineteca Milano: serve il nonce WordPress
