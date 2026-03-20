@@ -109,9 +109,12 @@ def fetch_lista(
     # Carica la pagina del cinema per ottenere i cookie di sessione
     page_url = f"{BASE_SITE}/cinema/{slug}/al-cinema"
     try:
-        session.get(page_url, headers=HEADERS_PAGE, timeout=REQUEST_TIMEOUT)
-    except Exception:
-        pass  # Prosegui anche senza cookie
+        warmup = session.get(page_url, headers=HEADERS_PAGE, timeout=REQUEST_TIMEOUT)
+        if on_progress:
+            on_progress(f"[debug] warm-up status={warmup.status_code} content-type={warmup.headers.get('content-type','?')[:40]}", 0, tetto)
+    except Exception as exc:
+        if on_progress:
+            on_progress(f"[debug] warm-up errore: {exc}", 0, tetto)
 
     headers = {**HEADERS_API, "Referer": page_url}
 
@@ -133,6 +136,8 @@ def fetch_lista(
                 headers=headers,
                 timeout=REQUEST_TIMEOUT,
             )
+            if on_progress and offset == 0:
+                on_progress(f"[debug] API status={resp.status_code} content-type={resp.headers.get('content-type','?')[:40]} body={resp.text[:80]}", offset + 1, tetto)
             resp.raise_for_status()
             payload = resp.json()
         except Exception as exc:
