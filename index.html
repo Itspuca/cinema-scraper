@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineScraper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #13110e;
+      --surface:   #1c1914;
+      --surface2:  #252019;
+      --border:    #35301f;
+      --text:      #ede4d3;
+      --muted:     #8a7a62;
+      --accent:    #c9864a;
+      --accent-hi: #e8c87a;
+      --warn:      #7a4a1e;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2.5rem 1rem 5rem;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header { text-align: center; margin-bottom: 2.5rem; }
+    header h1 {
+      font-family: 'Lora', Georgia, serif;
+      font-size: 2rem; font-weight: 500;
+      color: var(--accent-hi); letter-spacing: 0.03em;
+    }
+    header p {
+      font-size: 0.8rem; color: var(--muted);
+      margin-top: 0.3rem; letter-spacing: 0.07em; text-transform: uppercase;
+    }
+
+    /* ── Form card ──────────────────────────────────── */
+    .form-card {
+      max-width: 580px; margin: 0 auto 2rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.6rem;
+    }
+    .form-section { margin-bottom: 1rem; }
+    .form-section:last-child { margin-bottom: 0; }
+    .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }
+    .field    { flex: 1; min-width: 120px; }
+    .field-sm { flex: 0 0 90px; }
+
+    label {
+      display: block; font-size: 0.68rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 0.4rem; font-weight: 500;
+    }
+
+    select, input[type="number"], input[type="date"], input[type="search"] {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--text); padding: 0.55rem 0.8rem;
+      font-size: 0.92rem; font-family: 'Inter', system-ui, sans-serif;
+      appearance: none; transition: border-color 0.15s;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.5) sepia(0.5) saturate(2); cursor: pointer;
+    }
+    input[type="search"]::-webkit-search-cancel-button { cursor: pointer; }
+    select:focus, input:focus { outline: none; border-color: var(--accent); }
+    optgroup { color: var(--muted); font-size: 0.75rem; }
+    optgroup option { color: var(--text); font-size: 0.92rem; }
+
+    /* ── Days tabs ──────────────────────────────────── */
+    .days-tabs { display: flex; gap: 0.35rem; margin-bottom: 0.9rem; }
+    .days-tab {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--muted); padding: 0.42rem 0.5rem;
+      font-size: 0.77rem; font-family: 'Inter', system-ui, sans-serif;
+      cursor: pointer; text-align: center; transition: all 0.15s;
+    }
+    .days-tab:hover  { border-color: var(--accent); color: var(--accent); }
+    .days-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(201,134,74,0.09); }
+
+    /* ── Buttons ────────────────────────────────────── */
+    .btn-primary {
+      background: var(--accent); color: #13110e; border: none; border-radius: 7px;
+      padding: 0.57rem 1.4rem; font-size: 0.88rem;
+      font-family: 'Inter', system-ui, sans-serif; font-weight: 500;
+      cursor: pointer; transition: opacity 0.15s; white-space: nowrap; align-self: flex-end;
+    }
+    .btn-primary:hover    { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: none; border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); padding: 0.5rem 0.85rem; font-size: 0.82rem;
+      font-family: 'Inter', system-ui, sans-serif; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap; align-self: flex-end;
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Progress ───────────────────────────────────── */
+    #progress-wrap { max-width: 580px; margin: 0 auto 1.5rem; }
+    #progress-bar-bg {
+      height: 2px; background: var(--border); border-radius: 1px;
+      overflow: hidden; margin-bottom: 0.7rem;
+    }
+    #progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-hi));
+      transition: width 0.3s ease;
+    }
+    #progress-bar.pulse { animation: slide 1.4s ease-in-out infinite; }
+    @keyframes slide {
+      0%   { margin-left: 0;   width: 30%; }
+      50%  { margin-left: 35%; width: 30%; }
+      100% { margin-left: 0;   width: 30%; }
+    }
+    #log {
+      font-size: 0.72rem; color: var(--muted);
+      font-family: 'Courier New', monospace;
+      max-height: 100px; overflow-y: auto; line-height: 1.7;
+    }
+    #log div::before { content: '› '; color: var(--accent); }
+
+    /* ── Error banner (punto 8) ─────────────────────── */
+    #errori-banner {
+      max-width: 760px; margin: 0 auto 0.8rem;
+      background: rgba(122,74,30,0.25); border: 1px solid var(--warn);
+      border-radius: 8px; padding: 0.6rem 1rem;
+      font-size: 0.8rem; color: #e8b87a; display: none;
+    }
+
+    /* ── Results header ─────────────────────────────── */
+    .results-header {
+      display: flex; align-items: center;
+      max-width: 760px; margin: 0 auto 0.8rem; gap: 0.5rem;
+    }
+    #results-count { flex: 1; font-size: 0.77rem; color: var(--muted); }
+    .cached-badge {
+      display: inline-block; background: var(--surface2); color: var(--muted);
+      font-size: 0.66rem; padding: 0.1rem 0.45rem; border-radius: 3px;
+      margin-left: 0.4rem; vertical-align: middle;
+    }
+    .toggle-group {
+      display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden;
+    }
+    .toggle-btn {
+      background: none; border: none; border-right: 1px solid var(--border);
+      padding: 0.38rem 0.75rem; cursor: pointer; color: var(--muted);
+      font-size: 0.77rem; font-family: 'Inter', system-ui, sans-serif;
+      transition: background 0.15s, color 0.15s; white-space: nowrap;
+    }
+    .toggle-btn:last-child { border-right: none; }
+    .toggle-btn:hover  { background: var(--surface2); color: var(--text); }
+    .toggle-btn.active { background: rgba(201,134,74,0.1); color: var(--accent); }
+
+    /* ── Search bar (punto 1) ───────────────────────── */
+    #search-wrap {
+      max-width: 760px; margin: 0 auto 1rem; display: none;
+    }
+    #search-wrap input {
+      background: var(--surface); border-color: var(--border);
+      padding: 0.5rem 0.9rem; font-size: 0.88rem;
+    }
+
+    /* ── Results container ──────────────────────────── */
+    #risultati { max-width: 760px; margin: 0 auto; }
+
+    /* ── LIST: per film ─────────────────────────────── */
+    .film-block { padding: 1rem 0 0.75rem; border-bottom: 1px solid var(--border); }
+    .film-block:last-of-type { border-bottom: none; }
+    .film-titolo {
+      font-family: 'Lora', Georgia, serif; font-size: 1rem;
+      font-weight: 500; color: var(--text); margin-bottom: 0.2rem;
+    }
+    .film-regista { color: var(--muted); font-size: 0.83rem; font-style: italic; }
+    .film-proiezioni { margin-top: 0.4rem; }
+    .film-proiezione { font-size: 0.83rem; color: var(--muted); line-height: 1.9; }
+    .sala-tag { font-size: 0.72rem; color: var(--accent); margin-left: 0.4rem; }
+
+    /* ── LIST: per giorno ───────────────────────────── */
+    .giorno-header {
+      font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--accent); border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem; margin: 1.8rem 0 0.5rem; font-weight: 500;
+    }
+    .giorno-header:first-child { margin-top: 0; }
+    .giorno-film {
+      padding: 0.32rem 0; border-bottom: 1px solid rgba(53,48,31,0.5);
+      font-size: 0.88rem; line-height: 1.5;
+    }
+    .giorno-film:last-child { border-bottom: none; }
+    .film-orario {
+      color: var(--accent); font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
+      display: inline-block; min-width: 2.8rem; margin-right: 0.3rem;
+    }
+    .film-info { color: var(--text); }
+    .giorno-film .film-regista { font-style: italic; }
+
+    /* ── Date highlights (punto 3) ──────────────────── */
+    .data-oggi   { color: var(--accent-hi); font-weight: 500; }
+    .data-domani { color: var(--accent); }
+
+    /* ── Empty state ────────────────────────────────── */
+    .vuoto {
+      text-align: center; color: var(--muted);
+      font-style: italic; margin-top: 2.5rem; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>CineScraper</h1>
+  <p>Programmazione · Milano e dintorni</p>
+</header>
+
+<div class="form-card">
+
+  <div class="form-section">
+    <div class="form-row">
+      <div class="field">
+        <label for="sala">Cinema</label>
+        <select id="sala">
+          <option value="tutti-cinema">Tutti i cinema</option>
+          <optgroup label="Cineteca Milano">
+            <option value="tutte">Tutta la rete</option>
+            <option value="Arlecchino">&nbsp;Arlecchino</option>
+            <option value="Biblioteca">&nbsp;Biblioteca</option>
+            <option value="Metropolis">&nbsp;Metropolis</option>
+            <option value="MIC">&nbsp;MIC</option>
+          </optgroup>
+          <optgroup label="Spazio Cinema Anteo">
+            <option value="tutti-anteo">Tutta la rete</option>
+            <option value="Anteo">&nbsp;Milano Anteo</option>
+            <option value="CityLife">&nbsp;Milano CityLife</option>
+            <option value="Ariosto">&nbsp;Milano Ariosto</option>
+            <option value="Capitol">&nbsp;Monza Capitol</option>
+          </optgroup>
+          <optgroup label="UCI Cinemas">
+            <option value="tutti-uci">Tutta la rete</option>
+            <option value="uci-bicocca">&nbsp;UCI Bicocca</option>
+            <option value="uci-lissone">&nbsp;UCI Lissone</option>
+          </optgroup>
+          <optgroup label="Notorious Cinemas">
+            <option value="notorious-sesto">Notorious S.G. Sarca</option>
+          </optgroup>
+          <optgroup label="The Space Cinema">
+            <option value="space-rozzano">Rozzano</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="days-tabs">
+      <button class="days-tab active" data-mode="n"     onclick="setDaysMode('n')">Giorni da oggi</button>
+      <button class="days-tab"        data-mode="range" onclick="setDaysMode('range')">Intervallo date</button>
+      <button class="days-tab"        data-mode="all"   onclick="setDaysMode('all')">Tutto</button>
+    </div>
+
+    <!-- Giorni da oggi -->
+    <div id="days-input-n" class="form-row">
+      <div class="field-sm">
+        <label for="giorni-n">Giorni</label>
+        <input id="giorni-n" type="number" min="1" max="90" value="7" oninput="onDaysChange()">
+      </div>
+      <button class="btn-ghost" onclick="setOggi()" title="Solo oggi">Oggi</button><!-- punto 2 -->
+      <button class="btn-primary" onclick="cerca()">Cerca</button>
+    </div>
+
+    <!-- Intervallo date -->
+    <div id="days-input-range" class="form-row" style="display:none">
+      <div class="field">
+        <label for="data-da">Dal</label>
+        <input id="data-da" type="date" oninput="onDaysChange()">
+      </div>
+      <div class="field">
+        <label for="data-a">Al</label>
+        <input id="data-a" type="date" oninput="onDaysChange()">
+      </div>
+      <button class="btn-primary" onclick="cerca()">Cerca</button>
+    </div>
+
+    <!-- Tutto -->
+    <div id="days-input-all" class="form-row" style="display:none">
+      <button class="btn-primary" onclick="cerca()">Cerca tutto</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Progress -->
+<div id="progress-wrap" style="display:none; max-width:580px; margin:0 auto 1.5rem;">
+  <div id="progress-bar-bg"><div id="progress-bar"></div></div>
+  <div id="log"></div>
+</div>
+
+<!-- Error banner (punto 8) -->
+<div id="errori-banner"></div>
+
+<!-- Results header -->
+<div class="results-header" id="results-header" style="display:none;">
+  <span id="results-count"></span>
+
+  <!-- Sort -->
+  <div class="toggle-group">
+    <button class="toggle-btn active" id="btn-sort-titolo" onclick="setSort('titolo')">Titolo</button>
+    <button class="toggle-btn"        id="btn-sort-orario" onclick="setSort('orario')">Orario</button>
+  </div>
+
+  <!-- View -->
+  <div class="toggle-group">
+    <button class="toggle-btn active" id="btn-per-film"   onclick="setView('film')">🎬 Film</button>
+    <button class="toggle-btn"        id="btn-per-giorno" onclick="setView('giorno')">📅 Giorno</button>
+  </div>
+</div>
+
+<!-- Search bar (punto 1) -->
+<div id="search-wrap">
+  <input type="search" id="cerca-titolo" placeholder="Cerca per titolo o regista…" oninput="onSearch(this.value)">
+</div>
+
+<div id="risultati"></div>
+
+<script>
+  // ── State ───────────────────────────────────────────
+  let _es               = null;
+  let _films            = null;
+  let _cached           = false;
+  let _sala             = null;
+  let _view             = 'film';
+  let _daysMode         = 'n';
+  let _sort             = 'titolo';
+  let _bgEs             = null;
+  let _searchQuery      = '';
+  let _hadErrors        = false;
+  let _suppressErrorLog = false;
+
+  const MULTI_SALA = new Set(['tutti-cinema','tutti-anteo','tutti-uci',
+                               'tutti-notorious','tutti-space','tutte']);
+
+  // Costanti per la formattazione date (module-level, non riallocate ad ogni chiamata)
+  const GIORNI_IT = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const MESI_IT   = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+                     'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+  // ── Helpers ──────────────────────────────────────────
+  function localISO(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function salaTag(sala, multi) {
+    return multi && sala ? ` -<span class="sala-tag">${sala}</span>` : '';
+  }
+
+  function setPrimaryButtons(disabled) {
+    document.querySelectorAll('.btn-primary').forEach(b => b.disabled = disabled);
+  }
+
+  // Default date range picker: oggi → oggi+6 (usa localISO per evitare bug UTC)
+  (function () {
+    const oggi = new Date();
+    const fine = new Date(); fine.setDate(oggi.getDate() + 6);
+    document.getElementById('data-da').value = localISO(oggi);
+    document.getElementById('data-a').value  = localISO(fine);
+  })();
+
+  // ── Days mode ───────────────────────────────────────
+  function setDaysMode(mode) {
+    _daysMode = mode;
+    document.querySelectorAll('.days-tab').forEach(b =>
+      b.classList.toggle('active', b.dataset.mode === mode));
+    document.getElementById('days-input-n').style.display     = mode === 'n'     ? 'flex' : 'none';
+    document.getElementById('days-input-range').style.display = mode === 'range' ? 'flex' : 'none';
+    document.getElementById('days-input-all').style.display   = mode === 'all'   ? 'flex' : 'none';
+  }
+
+  function setOggi() {
+    document.getElementById('giorni-n').value = '1';
+    cerca();
+  }
+
+  function onDaysChange() {}
+
+  // ── View / Sort ─────────────────────────────────────
+  function setView(v) {
+    _view = v;
+    document.getElementById('btn-per-film').classList.toggle('active', v === 'film');
+    document.getElementById('btn-per-giorno').classList.toggle('active', v === 'giorno');
+    render();
+  }
+
+  function setSort(s) {
+    _sort = s;
+    document.getElementById('btn-sort-titolo').classList.toggle('active', s === 'titolo');
+    document.getElementById('btn-sort-orario').classList.toggle('active', s === 'orario');
+    render();
+  }
+
+  function onSearch(q) {
+    _searchQuery = q.toLowerCase().trim();
+    render();
+  }
+
+  // ── Fetch ───────────────────────────────────────────
+  function cerca() {
+    const sala = document.getElementById('sala').value;
+    _sala = sala;
+    if (_es)   { _es.close();   _es   = null; }
+    if (_bgEs) { _bgEs.close(); _bgEs = null; }
+    _films = null; _hadErrors = false; _suppressErrorLog = false; _searchQuery = '';
+    document.getElementById('cerca-titolo').value = '';
+    document.getElementById('risultati').innerHTML = '';
+    document.getElementById('results-header').style.display = 'none';
+    document.getElementById('search-wrap').style.display    = 'none';
+    document.getElementById('errori-banner').style.display  = 'none';
+    document.getElementById('results-count').innerHTML = '';
+    resetProgress(); showProgress(true);
+    setPrimaryButtons(true);
+
+    const params = new URLSearchParams({ sala: _sala });
+    if (_daysMode === 'n') {
+      const n = parseInt(document.getElementById('giorni-n').value) || 7;
+      params.set('giorni', n);
+    } else if (_daysMode === 'range') {
+      const to = document.getElementById('data-a').value;
+      if (to) {
+        const oggi = new Date(); oggi.setHours(0,0,0,0);
+        const diff = Math.ceil((new Date(to + 'T00:00:00') - oggi) / 86400000) + 2;
+        if (diff > 0) params.set('giorni', diff);
+      }
+    }
+
+    _es = new EventSource(`/api/stream?${params}`);
+    _es.onmessage = (e) => {
+      const ev = JSON.parse(e.data);
+      if (ev.type === 'log' || ev.type === 'progress') {
+        addLog(ev.msg);
+        if (ev.type === 'progress') {
+          if (ev.msg.toLowerCase().includes('errore')) _hadErrors = true;
+          ev.total && ev.total < 200 ? setBar(ev.current / ev.total * 100) : pulseBar();
+        }
+      } else if (ev.type === 'done') {
+        _suppressErrorLog = true;
+        setBar(100);
+        setTimeout(() => showProgress(false), 500);
+        _films  = ev.films;
+        _cached = ev.cached;
+        document.getElementById('results-header').style.display = 'flex';
+        document.getElementById('search-wrap').style.display    = 'block';
+        if (_hadErrors && _films.length > 0) {
+          const b = document.getElementById('errori-banner');
+          b.textContent = '⚠ Alcuni cinema non hanno risposto. I risultati potrebbero essere incompleti.';
+          b.style.display = 'block';
+        }
+        render();
+        _es.close(); _es = null;
+        setPrimaryButtons(false);
+        if (_daysMode !== 'all' && params.has('giorni')) _fetchBackground(sala);
+      } else if (ev.type === 'error') {
+        _suppressErrorLog = true;
+        addLog('Errore: ' + ev.msg);
+        if (_films && _films.length) render();
+        _es.close(); _es = null;
+        setPrimaryButtons(false);
+      }
+    };
+    _es.onerror = () => {
+      if (!_suppressErrorLog) addLog('Connessione interrotta.');
+      _es.close(); _es = null;
+      setPrimaryButtons(false);
+    };
+  }
+
+  // Fetch silenzioso di tutti i giorni, aggiorna _films senza re-render
+  function _fetchBackground(sala) {
+    const params = new URLSearchParams({ sala });
+    _bgEs = new EventSource(`/api/stream?${params}`);
+    _bgEs.onmessage = (e) => {
+      const ev = JSON.parse(e.data);
+      if (ev.type === 'done' && sala === _sala) {
+        _films  = ev.films;
+        _cached = ev.cached;
+        _bgEs.close(); _bgEs = null;
+      } else if (ev.type === 'done' || ev.type === 'error') {
+        _bgEs.close(); _bgEs = null;
+      }
+    };
+    _bgEs.onerror = () => { _bgEs.close(); _bgEs = null; };
+  }
+
+  // ── Filtering ────────────────────────────────────────
+  function filteredFilms(oggi) {
+    if (!_films) return [];
+    let films = _films;
+
+    if (_daysMode === 'n') {
+      const n    = parseInt(document.getElementById('giorni-n').value) || 7;
+      const fine = new Date(oggi); fine.setDate(oggi.getDate() + n - 1);
+      films = films.filter(f => f.data >= localISO(oggi) && f.data <= localISO(fine));
+    } else if (_daysMode === 'range') {
+      const from = document.getElementById('data-da').value;
+      const to   = document.getElementById('data-a').value;
+      if (from) films = films.filter(f => f.data >= from);
+      if (to)   films = films.filter(f => f.data <= to);
+    }
+
+    if (_searchQuery)
+      films = films.filter(f =>
+        f.titolo.toLowerCase().includes(_searchQuery) ||
+        (f.regista && f.regista.toLowerCase().includes(_searchQuery))
+      );
+
+    return films;
+  }
+
+  // ── Render ───────────────────────────────────────────
+  function render() {
+    if (!_films) return;
+    const oggi  = new Date(); oggi.setHours(0,0,0,0);  // calcolato una volta sola per tutta la render
+    const films = filteredFilms(oggi);
+    const multi = MULTI_SALA.has(_sala);
+    const el    = document.getElementById('risultati');
+    if (!films.length) { el.innerHTML = '<p class="vuoto">Nessun film trovato.</p>'; return; }
+    _view === 'film' ? renderPerFilm(films, multi, el, oggi) : renderPerGiorno(films, multi, el, oggi);
+  }
+
+  // ── Per film ─────────────────────────────────────────
+  function renderPerFilm(films, multi, el, oggi) {
+    const g = raggruppa(films);
+    let titoli = Object.keys(g);
+
+    if (_sort === 'titolo') {
+      titoli.sort((a, b) => a.localeCompare(b, 'it'));
+    } else {
+      // Pre-calcola il minimo per ogni titolo prima di ordinare (evita reduce dentro il comparator)
+      const minKey = {};
+      for (const t of titoli)
+        minKey[t] = g[t].proiezioni.reduce((m, p) => p.data + p.orario < m ? p.data + p.orario : m, '9');
+      titoli.sort((a, b) => minKey[a].localeCompare(minKey[b]));
+    }
+
+    let html = '';
+    titoli.forEach(titolo => {
+      const f   = g[titolo];
+      const reg = f.regista ? `<span class="film-regista">, ${f.regista}</span>` : '';
+      html += `<div class="film-block"><div class="film-titolo">${titolo}${reg}</div><div class="film-proiezioni">`;
+      f.proiezioni.forEach(p => {
+        html += `<div class="film-proiezione">${dataTag(p.data, oggi)}, ${p.orario}${salaTag(p.sala, multi)}</div>`;
+      });
+      html += `</div></div>`;
+    });
+    el.innerHTML = html;
+    updateCount(films.length, titoli.length);
+  }
+
+  // ── Per giorno ───────────────────────────────────────
+  function renderPerGiorno(films, multi, el, oggi) {
+    const sorted = [...films].sort((a, b) => {
+      const dateCmp = a.data.localeCompare(b.data);
+      if (dateCmp !== 0) return dateCmp;
+      return _sort === 'orario'
+        ? a.orario.localeCompare(b.orario)
+        : a.titolo.localeCompare(b.titolo, 'it');
+    });
+
+    const perData = {};
+    sorted.forEach(f => { (perData[f.data] = perData[f.data] || []).push(f); });
+
+    let html = '';
+    for (const [data, righe] of Object.entries(perData)) {
+      html += `<div class="giorno-header">${dataTag(data, oggi)}</div>`;
+      righe.forEach(f => {
+        const reg = f.regista ? `, <span class="film-regista">${f.regista}</span>` : '';
+        html += `<div class="giorno-film"><span class="film-orario">${f.orario}</span><span class="film-info">${f.titolo}${reg}</span>${salaTag(f.sala, multi)}</div>`;
+      });
+    }
+    el.innerHTML = html;
+    updateCount(films.length, new Set(films.map(f => f.titolo)).size);
+  }
+
+  // ── Utilities ────────────────────────────────────────
+  function raggruppa(films) {
+    const out = {};
+    films.forEach(f => {
+      if (!out[f.titolo]) out[f.titolo] = { regista: f.regista, proiezioni: [] };
+      out[f.titolo].proiezioni.push({ data: f.data, orario: f.orario, sala: f.sala });
+    });
+    return out;
+  }
+
+  function dataTag(iso, oggi) {
+    const d    = new Date(iso + 'T00:00:00');
+    const diff = Math.round((d - oggi) / 86400000);
+    const label = diff === 0 ? 'Oggi' : diff === 1 ? 'Domani' : formatData(iso);
+    const cls   = diff === 0 ? 'data-oggi' : diff === 1 ? 'data-domani' : '';
+    return cls ? `<span class="${cls}">${label}</span>` : label;
+  }
+
+  function formatData(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    return `${GIORNI_IT[d.getDay()]} ${d.getDate()} ${MESI_IT[d.getMonth()]}`;
+  }
+
+  function updateCount(proiezioni, titoli) {
+    const badge = _cached ? '<span class="cached-badge">cache</span>' : '';
+    document.getElementById('results-count').innerHTML =
+      `${proiezioni} proiezioni · ${titoli} film${badge}`;
+  }
+
+  function showProgress(on)  { document.getElementById('progress-wrap').style.display = on ? 'block' : 'none'; }
+  function resetProgress()   {
+    const b = document.getElementById('progress-bar');
+    b.style.width = '0%'; b.classList.remove('pulse');
+    document.getElementById('log').innerHTML = '';
+  }
+  function setBar(pct) {
+    const b = document.getElementById('progress-bar');
+    b.classList.remove('pulse'); b.style.width = Math.min(pct, 100) + '%';
+  }
+  function pulseBar() { document.getElementById('progress-bar').classList.add('pulse'); }
+  function addLog(msg) {
+    const log = document.getElementById('log');
+    if (log.children.length >= 50) log.removeChild(log.firstChild);
+    const d = document.createElement('div');
+    d.textContent = msg;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+</script>
+</body>
+</html>

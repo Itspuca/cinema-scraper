@@ -1,0 +1,23 @@
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# Output generato
+lists/
+
+# Tool batch e script locali (non necessari per la webapp)
+genera_doc.py
+cineteca.bat
+avvia_server.bat
+
+# OS
+.DS_Store
+Thumbs.db
